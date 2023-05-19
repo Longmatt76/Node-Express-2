@@ -3,7 +3,11 @@
 const User = require('../models/user');
 const express = require('express');
 const router = express.Router();
-const createTokenForUser = require('../helpers/createToken');
+const  createTokenForUser  = require("../helpers/createToken")
+const jsonschema = require("jsonschema");
+const userRegisterSchema = require("../schemas/userRegister.json");
+const userAuthSchema = require("../schemas/userAuth.json")
+const ExpressError = require('../helpers/expressError');
 
 
 /** Register user; return token.
@@ -16,9 +20,14 @@ const createTokenForUser = require('../helpers/createToken');
 
 router.post('/register', async function(req, res, next) {
   try {
-    const { username, password, first_name, last_name, email, phone } = req.body;
-    let user = await User.register({username, password, first_name, last_name, email, phone});
-    const token = createTokenForUser(username, user.admin);
+    const validatdor = jsonschema.validate(req.body, userRegisterSchema )
+    if(!validatdor.valid){
+      const errs = validatdor.errors.map(e => e.stack);
+      throw new ExpressError(errs, 400)
+    }
+    
+    const user = await User.register({...req.body});
+    const token = createTokenForUser(user.username, user.admin);
     return res.status(201).json({ token });
   } catch (err) {
     return next(err);
@@ -37,9 +46,15 @@ router.post('/register', async function(req, res, next) {
 
 router.post('/login', async function(req, res, next) {
   try {
+    const validatdor = jsonschema.validate(req.body, userAuthSchema);
+    if(!validatdor.valid) {
+      const errs = validatdor.errors.map(e => e.stack);
+      throw new ExpressError (errs, 400)
+    }
+
     const { username, password } = req.body;
-    let user = User.authenticate(username, password);
-    const token = createTokenForUser(username, user.admin);
+    const user = await User.authenticate(username, password);
+    const token = createTokenForUser(user);
     return res.json({ token });
   } catch (err) {
     return next(err);

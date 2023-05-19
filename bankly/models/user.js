@@ -9,6 +9,7 @@ class User {
 /** Register user with data. Returns new user data. */
 
   static async register({username, password, first_name, last_name, email, phone}) {
+  
     const duplicateCheck = await db.query(
       `SELECT username 
         FROM users 

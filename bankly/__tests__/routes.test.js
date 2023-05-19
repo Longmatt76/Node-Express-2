@@ -10,6 +10,7 @@ const bcrypt = require("bcrypt");
 const createToken = require("../helpers/createToken");
 const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
+const User = require("../models/user");
 
 // tokens for our sample users
 const tokens = {};
@@ -22,9 +23,9 @@ beforeEach(async function() {
   }
 
   let sampleUsers = [
-    ["u1", "fn1", "ln1", "email1", "phone1", await _pwd("pwd1"), false],
-    ["u2", "fn2", "ln2", "email2", "phone2", await _pwd("pwd2"), false],
-    ["u3", "fn3", "ln3", "email3", "phone3", await _pwd("pwd3"), true]
+    ["u1", "fn1", "ln1", "email1", "phone1", await _pwd("password1"), false],
+    ["u2", "fn2", "ln2", "email2", "phone2", await _pwd("password2"), false],
+    ["u3", "fn3", "ln3", "email3", "phone3", await _pwd("password3"), true]
   ];
 
   for (let user of sampleUsers) {
@@ -35,6 +36,9 @@ beforeEach(async function() {
     tokens[user[0]] = createToken(user[0], user[6]);
   }
 });
+
+// ***************************************************************************************************
+// tests for user registration
 
 describe("POST /auth/register", function() {
   test("should allow a user to register in", async function() {
@@ -61,7 +65,7 @@ describe("POST /auth/register", function() {
       .post("/auth/register")
       .send({
         username: "u1",
-        password: "pwd1",
+        password: "password1",
         first_name: "new_first",
         last_name: "new_last",
         email: "new@newuser.com",
@@ -73,7 +77,48 @@ describe("POST /auth/register", function() {
       message: `There already exists a user with username 'u1'`
     });
   });
+  // test the validation, first with extra data and second with missing data
+  test("validation should not work: extra data", async function() {
+    const response = await request(app)
+    .post("/auth/register")
+    .send({
+      username: "u5",
+      password: "password5",
+      first_name: "new_fifth",
+      last_name: "fifth_last",
+      email: "fifth@newuser.com",
+      phone: "1233211221",
+      catsName: "Taco" 
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toEqual({
+      status: 400,
+      message: 	['instance is not allowed to have the additional property \"catsName\"']
+    })
+  })
+  test("validation should not work: missing data", async function () {
+    const response = await request(app)
+    .post("/auth/register")
+    .send({
+      username: "billy"
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toEqual({
+      status: 400,
+      message:  [
+        "instance requires property \"first_name\"",
+        "instance requires property \"last_name\"",
+        "instance requires property \"password\"",
+        "instance requires property \"email\"",
+        "instance requires property \"phone\""
+      ]
+    })
+  })
 });
+
+// *****************************************************************************************************
+// tests for user login
+
 
 describe("POST /auth/login", function() {
   test("should allow a correct username/password to log in", async function() {
@@ -81,16 +126,57 @@ describe("POST /auth/login", function() {
       .post("/auth/login")
       .send({
         username: "u1",
-        password: "pwd1"
+        password: "password1"
       });
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({ token: expect.any(String) });
 
-    let { username, admin } = jwt.verify(response.body.token, SECRET_KEY);
+    const { username, admin } = await User.authenticate("u1", "password1");
     expect(username).toBe("u1");
     expect(admin).toBe(false);
   });
+  // the following tests require awaiting User.authenticate and or test validation
+  test("unauth with non-existent user", async function (){
+    const response = await request(app)
+    .post("/auth/login")
+    .send({username: "Glerber",
+           password: "Shlerberger"});
+    expect(response.statusCode).toEqual(401);
+  })
+  test("unauth with wrong password", async function() {
+    const response = await request(app)
+    .post("/auth/login")
+    .send({
+      username: "u1",
+      password: "wrongo"
+    });
+    expect(response.statusCode).toEqual(401);
+  })
+  test("bad request with invalid data", async function () {
+    const response = await request(app)
+    .post("/auth/login")
+    .send({
+      username: 99,
+      password: "usernameCantBeANumberBro",
+    });
+    expect(response.statusCode).toEqual(400)
+  })
+  test("bad request with missing data", async function(){
+    const response = await request(app)
+    .post("/auth/login")
+    .send({
+      username: "u1",
+    });
+    expect(response.statusCode).toEqual(400);
+  })
 });
+
+
+
+
+
+// ***********************************************************************************************
+
 
 describe("GET /users", function() {
   test("should deny access if no token provided", async function() {

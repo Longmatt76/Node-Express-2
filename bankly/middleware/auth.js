@@ -48,16 +48,24 @@ function authUser(req, res, next) {
   try {
     const token = req.body._token || req.query._token;
     if (token) {
-      let payload = jwt.decode(token);
-      req.curr_username = payload.username;
-      req.curr_admin = payload.admin;
+      jwt.verify(token, SECRET_KEY, (err, decoded) => {
+        if (err) {
+          err.status = 401;
+          return next(err);
+        }
+        req.curr_username = decoded.username;
+        req.curr_admin = decoded.admin;
+        return next();
+      });
+    } else {
+      return next();
     }
-    return next();
   } catch (err) {
     err.status = 401;
     return next(err);
   }
 } // end
+
 
 module.exports = {
   requireLogin,

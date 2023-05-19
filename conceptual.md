@@ -47,7 +47,7 @@ Answer the following questions below:
 
 - What does `RETURNING` do in SQL? When would you use it?
 
-  THE RETURNING clause is used when making INSERT, UPDATE or DELETES that don't inherently return data like a SELECT would. This is useful for error catching, for example on an INSERT you could return a column and if those rows came back empty you would know that there was an issue in writing the data so you could then throw an error.  
+  The RETURNING clause is used when making INSERT, UPDATE or DELETES that don't inherently return data like a SELECT would. This is useful for error catching, for example on an INSERT you could return a column and if those rows came back empty you would know that there was an issue in writing the data so you could then throw an error.  
 
 - What are some differences between Web Sockets and HTTP?
  
