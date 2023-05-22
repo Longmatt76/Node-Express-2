@@ -246,7 +246,7 @@ describe("PATCH /users/[username]", function() {
   test("should disallowing patching not-allowed-fields", async function() {
     const response = await request(app)
       .patch("/users/u1")
-      .send({ _token: tokens.u1, admin: true });
+      .send({ username: "testUser99", admin: true });
     expect(response.statusCode).toBe(401);
   });
 

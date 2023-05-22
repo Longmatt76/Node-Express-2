@@ -76,7 +76,7 @@ class User {
 
   /** Returns list of user info:
    *
-   * [{username, first_name, last_name, email, phone}, ...]
+   * [{username, first_name, last_name}, ...]
    *
    * */
 
@@ -84,9 +84,7 @@ class User {
     const result = await db.query(
       `SELECT username,
                 first_name,
-                last_name,
-                email,
-                phone
+                last_name
             FROM users 
             ORDER BY username`
     );

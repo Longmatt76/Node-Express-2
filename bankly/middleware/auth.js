@@ -2,6 +2,7 @@
 
 const jwt = require('jsonwebtoken');
 const { SECRET_KEY } = require('../config');
+const ExpressError = require('../helpers/expressError');
 
 /** Authorization Middleware: Requires user is logged in. */
 
@@ -66,9 +67,26 @@ function authUser(req, res, next) {
   }
 } // end
 
+// requires that person making request is either the curr_user or an admin
+function requireUserOrAdmin(req, res, next) {
+  try {
+    const curr_username = req.curr_username;
+    const curr_admin = req.curr_admin;
+    
+    if (!(curr_admin || curr_username === req.params.username)) {
+      throw new ExpressError("Unauthorized", 401);
+    }
+    
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
 
 module.exports = {
   requireLogin,
   requireAdmin,
-  authUser
+  authUser,
+  requireUserOrAdmin
 };
